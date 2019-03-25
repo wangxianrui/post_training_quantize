@@ -1,0 +1,9 @@
+.idea
+__pycache__
+events.out.*
+*.ckpt*
+*.pb
+*.pbtxt
+*.tflite
+*.json
+*.tfrecords
