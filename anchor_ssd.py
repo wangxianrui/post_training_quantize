@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from test.hyper_parameters import *
+from hyper_parameters import *
 
 
 def anchor_one_layer(scale,
