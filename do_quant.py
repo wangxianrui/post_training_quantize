@@ -9,15 +9,16 @@ slim = tf.contrib.slim
 class config:
     num_samples = 128
     batch_size = 16
-    img_dir = 'coco_test.tfrecords'
+    ori_tfrds = 'coco_test.tfrecords'
     full_ckpt_path = 'ssd_eval_full/model.ckpt'
     quant_ckpt_path = 'ssd_eval_quant/model.ckpt'
+    input_name = 'Placeholder'
 
 
 def get_batch_images():
     MEANS = [123., 117., 104.]
     sess = tf.Session()
-    val_path = config.img_dir
+    val_path = config.ori_tfrds
     image0, bboxes, labels = tf_utils.decode_tfrecord(val_path)
     image = tf.train.batch(tf_utils.reshape_list([image0]), batch_size=config.batch_size)
     batch_queue = slim.prefetch_queue.prefetch_queue(tf_utils.reshape_list([image]))
@@ -41,7 +42,7 @@ def main():
         saver.restore(sess, config.full_ckpt_path)
         tf.graph_util.remove_training_nodes(sess.graph_def)
         tf.contrib.quantize.create_eval_graph()
-        net_input = sess.graph.get_tensor_by_name('Placeholder:0')
+        net_input = sess.graph.get_tensor_by_name(':0')
 
         # classify operations
         weight_pattern = r'weights_quant(_\d)?/FakeQuantWithMinMaxVars'
@@ -66,7 +67,7 @@ def main():
                 tf.assign(sess.graph.get_tensor_by_name(min_name), min_val),
                 tf.assign(sess.graph.get_tensor_by_name(max_name), max_val),
             ])
-            print('{:100} weights quantized'.format(weight_name))
+            print('{:100} weights quantize_ac'.format(weight_name))
 
         # quantize activation
         for op in act_quant_ops:
@@ -83,7 +84,7 @@ def main():
                 tf.assign(sess.graph.get_tensor_by_name(min_name), np.mean(min_val)),
                 tf.assign(sess.graph.get_tensor_by_name(max_name), np.mean(max_val)),
             ])
-            print('{:100} activation quantized'.format(act_name))
+            print('{:100} activation quantize_ac'.format(act_name))
 
         # save
         saver = tf.train.Saver()

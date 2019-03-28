@@ -4,6 +4,11 @@ from hyper_parameters import *
 import numpy as np
 
 
+class Config:
+    res_tfrds = 'val_dense512.tfrecords'
+    num_samples = 200
+
+
 def decode_tfrecord(filename):
     reader = tf.TFRecordReader()
     filename_queue = tf.train.string_input_producer([filename])
@@ -112,7 +117,7 @@ def map(filename):
     recall = []
     precision = []
     score_threshold = 0.5
-    num_pic = 200
+    num_pic = Config.num_samples
     ap = np.zeros(shape=[11])
     thr = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.92, 0.94, 0.95, 0.96,
            0.98, 0.99, 0.999]
@@ -156,5 +161,5 @@ def map(filename):
     print(np.sum(ap) - ap[0] * 0.5)
 
 
-filename = "val_dense512_quant.tfrecords"
+filename = Config.res_tfrds
 map(filename)

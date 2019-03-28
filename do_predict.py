@@ -4,6 +4,34 @@ import anchor_ssd
 import tf_utils
 import post_process
 from tqdm import trange
+import os
+
+
+class Config:
+    model_dir = 'ssd_eval_full'
+    ckpt_path = os.path.join(model_dir, 'model.ckpt')
+    res_tfrds = 'val_dense512.tfrecords'
+    ori_tfrds = 'coco_test.tfrecords'
+    test_samples = 200
+    input_name = ['Placeholder']
+    output_name = [
+        # logits
+        [
+            'detection/det_layer1/Sigmoid',
+            'detection/det_layer2/Sigmoid',
+            'detection/det_layer3/Sigmoid',
+            'detection/det_layer4/Sigmoid',
+            'detection/det_layer5/Sigmoid',
+        ],
+        # locations
+        [
+            'detection/det_layer1/BiasAdd_3',
+            'detection/det_layer2/BiasAdd_3',
+            'detection/det_layer3/BiasAdd_3',
+            'detection/det_layer4/BiasAdd_3',
+            'detection/det_layer5/BiasAdd_3',
+        ]
+    ]
 
 
 def _float_feature(value):
@@ -25,29 +53,29 @@ def _bytes_feature(value):
 
 
 def main():
-    ckpt_path = 'ssd_eval_quant_08128/model.ckpt'
-    writer = tf.python_io.TFRecordWriter('val_dense512_quant.tfrecords')
+    writer = tf.python_io.TFRecordWriter(Config.res_tfrds)
 
     with tf.Graph().as_default(), tf.device('/cpu:0'):
         # network
         sess = tf.Session()
-        saver = tf.train.import_meta_graph(ckpt_path + '.meta')
-        saver.restore(sess, ckpt_path)
-        net_input = sess.graph.get_tensor_by_name('Placeholder:0')
-        logits = [
-            sess.graph.get_tensor_by_name('detection/det_layer1/Reshape:0'),
-            sess.graph.get_tensor_by_name('detection/det_layer2/Reshape:0'),
-            sess.graph.get_tensor_by_name('detection/det_layer3/Reshape:0'),
-            sess.graph.get_tensor_by_name('detection/det_layer4/Reshape:0'),
-            sess.graph.get_tensor_by_name('detection/det_layer5/Reshape:0'),
-        ]
-        localisations = [
-            sess.graph.get_tensor_by_name('detection/det_layer1/Reshape_1:0'),
-            sess.graph.get_tensor_by_name('detection/det_layer2/Reshape_1:0'),
-            sess.graph.get_tensor_by_name('detection/det_layer3/Reshape_1:0'),
-            sess.graph.get_tensor_by_name('detection/det_layer4/Reshape_1:0'),
-            sess.graph.get_tensor_by_name('detection/det_layer5/Reshape_1:0'),
-        ]
+        saver = tf.train.import_meta_graph(Config.ckpt_path + '.meta')
+        saver.restore(sess, Config.ckpt_path)
+        net_input = sess.graph.get_tensor_by_name(Config.input_name[0] + ':0')
+        logits = [sess.graph.get_tensor_by_name(name + ':0') for name in Config.output_name[0]]
+        localisations = [sess.graph.get_tensor_by_name(name + ':0') for name in Config.output_name[1]]
+
+        logits[0] = tf.reshape(logits[0], [1, 32, 32, 4, 1, 1])
+        logits[1] = tf.reshape(logits[1], [1, 32, 32, 1, 3, 1])
+        logits[2] = tf.reshape(logits[2], [1, 16, 16, 1, 3, 1])
+        logits[3] = tf.reshape(logits[3], [1, 8, 8, 1, 3, 1])
+        logits[4] = tf.reshape(logits[4], [1, 4, 4, 1, 3, 1])
+
+        localisations[0] = tf.reshape(localisations[0], [1, 32, 32, 4, 1, 4])
+        localisations[1] = tf.reshape(localisations[1], [1, 32, 32, 1, 3, 4])
+        localisations[2] = tf.reshape(localisations[2], [1, 16, 16, 1, 3, 4])
+        localisations[3] = tf.reshape(localisations[3], [1, 8, 8, 1, 3, 4])
+        localisations[4] = tf.reshape(localisations[4], [1, 4, 4, 1, 3, 4])
+
         anchors = anchor_ssd.anchors_all_layers(OUT_SHAPES, BOX_RATIOS)
         localisations = post_process.tf_bboxes_decode(localisations, anchors)
         rscores, rbboxes = post_process.detected_bboxes(logits, localisations,
@@ -58,7 +86,7 @@ def main():
         # data
         data_sess = tf.Session()
         MEANS = [123., 117., 104.]
-        val_path = 'coco_test.tfrecords'
+        val_path = Config.ori_tfrds
         image0, bboxes, labels = tf_utils.decode_tfrecord(val_path)
         b_image = tf.expand_dims(image0, axis=0)
         # b_image = tf.image.resize_bilinear(b_image, [320, 320])
@@ -67,7 +95,7 @@ def main():
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=data_sess, coord=coord)
 
-    for step in trange(FLAGS.testing_steps):
+    for step in trange(Config.test_samples):
         image_v, b_gbboxes_v, b_glabels_v = data_sess.run([b_image, bboxes, labels])
         rscores_v, rbboxes_v = sess.run([rscores, rbboxes], feed_dict={net_input: image_v})
 
