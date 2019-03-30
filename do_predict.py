@@ -8,12 +8,12 @@ import os
 
 
 class Config:
-    model_dir = 'ssd_eval_full'
+    model_dir = 'ssd_train'
     ckpt_path = os.path.join(model_dir, 'model.ckpt')
     res_tfrds = 'val_dense512.tfrecords'
     ori_tfrds = 'coco_test.tfrecords'
-    test_samples = 200
-    input_name = ['Placeholder']
+    test_samples = 2300
+    input_name = ['placeholder']
     output_name = [
         # logits
         [
@@ -85,13 +85,13 @@ def main():
                                                         keep_top_k=FLAGS.keep_top_k)
         # data
         data_sess = tf.Session()
-        MEANS = [123., 117., 104.]
+        MEANS = [128., 128., 128.]
         val_path = Config.ori_tfrds
         image0, bboxes, labels = tf_utils.decode_tfrecord(val_path)
         b_image = tf.expand_dims(image0, axis=0)
         # b_image = tf.image.resize_bilinear(b_image, [320, 320])
         b_image = tf.cast(b_image, tf.float32) - tf.constant(MEANS)
-        b_image = b_image * 0.017
+        b_image = b_image / 127
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=data_sess, coord=coord)
 

@@ -1,10 +1,7 @@
 import tensorflow as tf
+import numpy as np
 
-sm_writer = tf.summary.FileWriter('log')
-with tf.Graph().as_default():
-    sess = tf.Session()
-    saver = tf.train.import_meta_graph('ssd_eval_full/model.ckpt' + '.meta')
-    saver.restore(sess, 'ssd_eval_full/model.ckpt')
-
-    sm_writer.add_graph(sess.graph)
-sm_writer.close()
+a = np.random.randint(0, 10, [3, 4], np.uint8)
+a = a.astype(np.float)
+print(a)
+print(a - 10)

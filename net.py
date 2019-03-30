@@ -304,7 +304,7 @@ def inference(input_tensor_batch, bn, k=32, block_config=BLOCK_CONFIG,
         loc_pred = tf.nn.conv2d(pre_loc_conv, loc_filter, strides=[1, 1, 1, 1], padding='SAME')
         loc_pred = tf.nn.bias_add(loc_pred, loc_biases)
 
-        pred_shape = cls_pred.get_shape().as_list()
+        # pred_shape = cls_pred.get_shape().as_list()
         # cls_pred = tf.reshape(cls_pred, [pred_shape[0], pred_shape[1], pred_shape[2],
         #                                  center_num * center_num, ratios_num, FLAGS.num_class])
         # loc_pred = tf.reshape(loc_pred, [pred_shape[0], pred_shape[1], pred_shape[2],
