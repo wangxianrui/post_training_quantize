@@ -8,29 +8,17 @@ import os
 
 
 class Config:
-    model_dir = 'ssd_train'
+    model_dir = 'ssd_eval_full'
     ckpt_path = os.path.join(model_dir, 'model.ckpt')
     res_tfrds = 'val_dense512.tfrecords'
     ori_tfrds = 'coco_test.tfrecords'
     test_samples = 2300
-    input_name = ['placeholder']
+    input_name = ['ckpt_input']
     output_name = [
         # logits
-        [
-            'detection/det_layer1/Sigmoid',
-            'detection/det_layer2/Sigmoid',
-            'detection/det_layer3/Sigmoid',
-            'detection/det_layer4/Sigmoid',
-            'detection/det_layer5/Sigmoid',
-        ],
+        'detection/logits',
         # locations
-        [
-            'detection/det_layer1/BiasAdd_3',
-            'detection/det_layer2/BiasAdd_3',
-            'detection/det_layer3/BiasAdd_3',
-            'detection/det_layer4/BiasAdd_3',
-            'detection/det_layer5/BiasAdd_3',
-        ]
+        'detection/loc'
     ]
 
 
@@ -61,20 +49,24 @@ def main():
         saver = tf.train.import_meta_graph(Config.ckpt_path + '.meta')
         saver.restore(sess, Config.ckpt_path)
         net_input = sess.graph.get_tensor_by_name(Config.input_name[0] + ':0')
-        logits = [sess.graph.get_tensor_by_name(name + ':0') for name in Config.output_name[0]]
-        localisations = [sess.graph.get_tensor_by_name(name + ':0') for name in Config.output_name[1]]
+        log = sess.graph.get_tensor_by_name(Config.output_name[0] + ':0')
+        # do sigmoid outside the network
+        log = tf.nn.sigmoid(log)
+        loc = sess.graph.get_tensor_by_name(Config.output_name[1] + ':0')
 
-        logits[0] = tf.reshape(logits[0], [1, 32, 32, 4, 1, 1])
-        logits[1] = tf.reshape(logits[1], [1, 32, 32, 1, 3, 1])
-        logits[2] = tf.reshape(logits[2], [1, 16, 16, 1, 3, 1])
-        logits[3] = tf.reshape(logits[3], [1, 8, 8, 1, 3, 1])
-        logits[4] = tf.reshape(logits[4], [1, 4, 4, 1, 3, 1])
-
-        localisations[0] = tf.reshape(localisations[0], [1, 32, 32, 4, 1, 4])
-        localisations[1] = tf.reshape(localisations[1], [1, 32, 32, 1, 3, 4])
-        localisations[2] = tf.reshape(localisations[2], [1, 16, 16, 1, 3, 4])
-        localisations[3] = tf.reshape(localisations[3], [1, 8, 8, 1, 3, 4])
-        localisations[4] = tf.reshape(localisations[4], [1, 4, 4, 1, 3, 4])
+        step = [0, 4096, 7168, 7936, 8128, 8176]
+        logits = []
+        logits.append(tf.reshape(log[:, step[0]:step[1], :], [1, 32, 32, 4, 1, 1]))
+        logits.append(tf.reshape(log[:, step[1]:step[2], :], [1, 32, 32, 1, 3, 1]))
+        logits.append(tf.reshape(log[:, step[2]:step[3], :], [1, 16, 16, 1, 3, 1]))
+        logits.append(tf.reshape(log[:, step[3]:step[4], :], [1, 8, 8, 1, 3, 1]))
+        logits.append(tf.reshape(log[:, step[4]:step[5], :], [1, 4, 4, 1, 3, 1]))
+        localisations = []
+        localisations.append(tf.reshape(loc[:, step[0]:step[1], :], [1, 32, 32, 4, 1, 4]))
+        localisations.append(tf.reshape(loc[:, step[1]:step[2], :], [1, 32, 32, 1, 3, 4]))
+        localisations.append(tf.reshape(loc[:, step[2]:step[3], :], [1, 16, 16, 1, 3, 4]))
+        localisations.append(tf.reshape(loc[:, step[3]:step[4], :], [1, 8, 8, 1, 3, 4]))
+        localisations.append(tf.reshape(loc[:, step[4]:step[5], :], [1, 4, 4, 1, 3, 4]))
 
         anchors = anchor_ssd.anchors_all_layers(OUT_SHAPES, BOX_RATIOS)
         localisations = post_process.tf_bboxes_decode(localisations, anchors)
@@ -85,13 +77,13 @@ def main():
                                                         keep_top_k=FLAGS.keep_top_k)
         # data
         data_sess = tf.Session()
-        MEANS = [128., 128., 128.]
+        MEANS = [127.5, 127.5, 127.5]
         val_path = Config.ori_tfrds
         image0, bboxes, labels = tf_utils.decode_tfrecord(val_path)
         b_image = tf.expand_dims(image0, axis=0)
         # b_image = tf.image.resize_bilinear(b_image, [320, 320])
         b_image = tf.cast(b_image, tf.float32) - tf.constant(MEANS)
-        b_image = b_image / 127
+        b_image = b_image / 127.5
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=data_sess, coord=coord)
 

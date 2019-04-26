@@ -8,24 +8,23 @@ def create_variables(name, shape, initializer):
 
 def variable_with_weight_decay(name, shape, wd):
     var = create_variables(
-      name,
-      shape,
-      tf.glorot_uniform_initializer())
-      #tf.truncated_normal_initializer(mean=0.0, stddev=0.01))
-      # tf.glorot_uniform_initializer())
+        name,
+        shape,
+        tf.glorot_uniform_initializer())
+    # tf.truncated_normal_initializer(mean=0.0, stddev=0.01))
+    # tf.glorot_uniform_initializer())
     if wd is not None:
         weight_decay = tf.multiply(tf.nn.l2_loss(var), wd, name='weight_loss')
         tf.add_to_collection('losses', weight_decay)
     return var
 
 
-def batch_normalization_layer(input_layer,  train_phase=True):
+def batch_normalization_layer(input_layer, train_phase=True):
     bn_layer = tf.layers.batch_normalization(input_layer, training=train_phase, name='bn')
     return bn_layer
 
 
 def conv_layer(input_layer, filter_shape, stride, padding, wd=None):
-
     filter_kernel = variable_with_weight_decay(name='weights', shape=filter_shape, wd=wd)
     conv_layer = tf.nn.conv2d(input_layer, filter_kernel, strides=[1, stride, stride, 1], padding=padding)
     biases = create_variables('biases', filter_shape[-1], tf.constant_initializer(0.0))
@@ -34,7 +33,6 @@ def conv_layer(input_layer, filter_shape, stride, padding, wd=None):
 
 
 def depthwise_layer(input_layer, filter_shape, stride, padding, wd=None):
-
     filter_kernel = variable_with_weight_decay(name='weights', shape=filter_shape, wd=wd)
     conv_layer = tf.nn.depthwise_conv2d(input_layer, filter_kernel, strides=[1, stride, stride, 1], padding=padding)
     biases = create_variables('biases', filter_shape[-2], tf.constant_initializer(0.0))
@@ -52,7 +50,6 @@ def depthwise_bn_relu_layer(input_layer, ks, stride, padding, bn=True, wd=None):
 
 
 def conv_bn_relu_layer(input_layer, filter_shape, stride, padding, bn=True, wd=None):
-
     filter_kernel = variable_with_weight_decay(name='weights', shape=filter_shape, wd=wd)
     conv_layer = tf.nn.conv2d(input_layer, filter_kernel, strides=[1, stride, stride, 1], padding=padding)
     bn_layer = batch_normalization_layer(conv_layer, train_phase=bn)
@@ -61,7 +58,6 @@ def conv_bn_relu_layer(input_layer, filter_shape, stride, padding, bn=True, wd=N
 
 
 def steam_block(input_layer, bn=True, wd=None):
-
     with tf.variable_scope('conv1'):
         conv1_layer = conv_bn_relu_layer(input_layer, [3, 3, 3, 16], 1, padding='SAME', bn=bn, wd=wd)
 
@@ -140,7 +136,6 @@ def transition_layer(input_layer, output_channel, is_pool=True, bn=True, wd=None
 
 
 def conv_bn_layer(input_layer, filter_shape, stride, padding, bn=True, wd=None):
-
     filter_kernel = variable_with_weight_decay(name='weights', shape=filter_shape, wd=wd)
     conv_layer = tf.nn.conv2d(input_layer, filter_kernel, strides=[1, stride, stride, 1], padding=padding)
     bn_layer = batch_normalization_layer(conv_layer, train_phase=bn)
@@ -155,12 +150,11 @@ def res_block(input_layer, bn=True, wd=None):
 
     with tf.variable_scope('left_conv2'):
         left_conv2_layer = conv_bn_layer(left_conv1_layer, [3, 3, 128, 128], 1,
-                                              padding='SAME', bn=bn, wd=wd)
-
+                                         padding='SAME', bn=bn, wd=wd)
 
     with tf.variable_scope('right_conv1'):
         right_conv1_layer = conv_bn_layer(input_layer, [1, 1, input_channel, 128], 1,
-                                               padding='SAME', bn=bn, wd=wd)
+                                          padding='SAME', bn=bn, wd=wd)
 
     output_add = left_conv2_layer + right_conv1_layer
     output = tf.nn.relu(output_add)
@@ -179,7 +173,7 @@ def dense_block_ext(input_layer, bn=True, wd=None):
 
     with tf.variable_scope('right_conv1'):
         pool_layer = tf.nn.max_pool(input_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
-                                      padding='SAME')
+                                    padding='SAME')
         right_conv1_layer = conv_bn_relu_layer(pool_layer, [1, 1, input_channel, 192], 1,
                                                padding='SAME', bn=bn, wd=wd)
 
@@ -199,7 +193,7 @@ def dense_block_ext2(input_layer, bn=True, wd=None):
 
     with tf.variable_scope('right_conv1'):
         pool_layer = tf.nn.max_pool(input_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
-                                      padding='SAME')
+                                    padding='SAME')
         right_conv1_layer = conv_bn_relu_layer(pool_layer, [1, 1, input_channel, 128], 1,
                                                padding='SAME', bn=bn, wd=wd)
 
@@ -210,7 +204,7 @@ def dense_block_ext2(input_layer, bn=True, wd=None):
 def inference(input_tensor_batch, bn, k=32, block_config=BLOCK_CONFIG,
               bottleneck_width=BOTTLENECK_WIDTH, reuse=False):
     with tf.variable_scope('base_pelee', reuse=reuse):
-        #layers = []
+        # layers = []
         with tf.variable_scope('steam_block', reuse=reuse):
             output_layer = steam_block(input_tensor_batch, bn=bn, wd=FLAGS.weight_decay)
 
@@ -228,10 +222,10 @@ def inference(input_tensor_batch, bn, k=32, block_config=BLOCK_CONFIG,
                 output_layer = dense_block(output_layer, block_config[1], k, bottleneck_width[1], bn=bn,
                                            wd=FLAGS.weight_decay)
             with tf.variable_scope('transition_layer'):
-                #output_channel = output_layer.get_shape().as_list()[-1]
+                # output_channel = output_layer.get_shape().as_list()[-1]
                 output_layer = transition_layer(output_layer, 256, is_pool=False, bn=bn,
                                                 wd=FLAGS.weight_decay)
-            #layers.append(output_layer)
+            # layers.append(output_layer)
             output_layer = tf.nn.max_pool(output_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
                                           padding='SAME')
 
@@ -239,7 +233,7 @@ def inference(input_tensor_batch, bn, k=32, block_config=BLOCK_CONFIG,
             with tf.variable_scope('dense_block'):
                 pre_feature1 = dense_block(output_layer, block_config[2], k, bottleneck_width[2], bn=bn,
                                            wd=FLAGS.weight_decay)
-            #layers.append(output_layer)
+            # layers.append(output_layer)
             with tf.variable_scope('transition_layer'):
                 output_channel = pre_feature1.get_shape().as_list()[-1]
                 output_layer = transition_layer(pre_feature1, output_channel, is_pool=False, bn=bn,
@@ -252,21 +246,21 @@ def inference(input_tensor_batch, bn, k=32, block_config=BLOCK_CONFIG,
             with tf.variable_scope('dense_block'):
                 pre_feature2 = dense_block(output_layer, block_config[3], k, bottleneck_width[3], bn=bn,
                                            wd=FLAGS.weight_decay)
-            #layers.append(output_layer)
+            # layers.append(output_layer)
             with tf.variable_scope('transition_layer'):
-                #output_channel = output_layer.get_shape().as_list()[-1]
+                # output_channel = output_layer.get_shape().as_list()[-1]
                 output_layer = transition_layer(pre_feature2, 512, is_pool=False, bn=bn,
                                                 wd=FLAGS.weight_decay)
 
         with tf.variable_scope('extension_1', reuse=reuse):
             with tf.variable_scope('dense_block'):
                 pre_feature3 = dense_block_ext(output_layer, bn=bn, wd=FLAGS.weight_decay)
-            #layers.append(output_layer)
+            # layers.append(output_layer)
 
         with tf.variable_scope('extension_2', reuse=reuse):
             with tf.variable_scope('dense_block'):
                 pre_feature4 = dense_block_ext(pre_feature3, bn=bn, wd=FLAGS.weight_decay)
-            #layers.append(output_layer)
+            # layers.append(output_layer)
 
         with tf.variable_scope('extension_3', reuse=reuse):
             with tf.variable_scope('dense_block'):
@@ -295,7 +289,7 @@ def inference(input_tensor_batch, bn, k=32, block_config=BLOCK_CONFIG,
         pre_cls_conv = tf.nn.bias_add(pre_cls_conv, class_liner_biases)
         cls_pred = tf.nn.conv2d(pre_cls_conv, class_filter, strides=[1, 1, 1, 1], padding='SAME')
         cls_pred = tf.nn.bias_add(cls_pred, class_biases)
-        cls_pred = tf.sigmoid(cls_pred)
+        # cls_pred = tf.sigmoid(cls_pred)
 
         pre_loc_conv = tf.nn.conv2d(feature_layer, loc_linear_filter,
                                     strides=[1, 1, 1, 1],
@@ -327,7 +321,7 @@ def inference(input_tensor_batch, bn, k=32, block_config=BLOCK_CONFIG,
                 feature4 = conv_bn_relu_layer(pre_feature4, [1, 1, input_channel, 256], stride=1, padding='SAME',
                                               bn=bn, wd=FLAGS.weight_decay)
 
-            #feature4 = tf.concat([feature4, up_feature5], axis=-1)
+            # feature4 = tf.concat([feature4, up_feature5], axis=-1)
             feature4 = feature4 + up_feature5
 
         with tf.variable_scope('base_feature3'):
@@ -345,7 +339,7 @@ def inference(input_tensor_batch, bn, k=32, block_config=BLOCK_CONFIG,
                 feature3 = conv_bn_relu_layer(pre_feature3, [1, 1, input_channel, 256], stride=1, padding='SAME',
                                               bn=bn, wd=FLAGS.weight_decay)
 
-            #feature3 = tf.concat([feature3, up_feature4], axis=-1)
+            # feature3 = tf.concat([feature3, up_feature4], axis=-1)
             feature3 = feature3 + up_feature4
 
         with tf.variable_scope('base_feature2'):
@@ -363,7 +357,7 @@ def inference(input_tensor_batch, bn, k=32, block_config=BLOCK_CONFIG,
                 feature2 = conv_bn_relu_layer(pre_feature2, [1, 1, input_channel, 256], stride=1, padding='SAME',
                                               bn=bn, wd=FLAGS.weight_decay)
 
-                #feature2 = tf.concat([feature2, up_feature3], axis=-1)
+                # feature2 = tf.concat([feature2, up_feature3], axis=-1)
             feature2 = feature2 + up_feature3
 
         with tf.variable_scope('base_feature1'):
@@ -401,26 +395,17 @@ def inference(input_tensor_batch, bn, k=32, block_config=BLOCK_CONFIG,
         with tf.variable_scope('det_layer1'):
             cls_pred1, loc_pred1 = class_loc_layer(feature1, NUM_CENTERS[0], RATIOS_NUM[0])
 
+        batch_size = tf.shape(cls_pred1)[0]
         logits.append(cls_pred1)
         logits.append(cls_pred2)
         logits.append(cls_pred3)
         logits.append(cls_pred4)
         logits.append(cls_pred5)
-
         loc.append(loc_pred1)
         loc.append(loc_pred2)
         loc.append(loc_pred3)
         loc.append(loc_pred4)
         loc.append(loc_pred5)
-        return logits, loc
-
-
-
-
-
-
-
-
-
-
-
+        logits = tf.concat([tf.reshape(cls_pred, [batch_size, -1, 1]) for cls_pred in logits], 1)
+        loc = tf.concat([tf.reshape(loc_pred, [batch_size, -1, 4]) for loc_pred in loc], 1)
+        return tf.identity(logits, 'logits'), tf.identity(loc, 'loc')

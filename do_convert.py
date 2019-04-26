@@ -7,21 +7,15 @@ import os
 class Config:
     model_dir = 'ssd_eval_quant'
     pb_path = os.path.join(model_dir, 'model.pb')
-    input_name = 'placeholder'
+    input_name = 'pb_input'
     output_name = [
-        'detection/det_layer1/Sigmoid',
-        'detection/det_layer2/Sigmoid',
-        'detection/det_layer3/Sigmoid',
-        'detection/det_layer4/Sigmoid',
-        'detection/det_layer5/Sigmoid',
-        'detection/det_layer1/act_quant_3/FakeQuantWithMinMaxVars',
-        'detection/det_layer2/act_quant_3/FakeQuantWithMinMaxVars',
-        'detection/det_layer3/act_quant_3/FakeQuantWithMinMaxVars',
-        'detection/det_layer4/act_quant_3/FakeQuantWithMinMaxVars',
-        'detection/det_layer5/act_quant_3/FakeQuantWithMinMaxVars',
+        # logits
+        'detection/logits',
+        # locations
+        'detection/loc'
     ]
-    mean_values = 128
-    std_values = 127
+    mean_values = 127.500001
+    std_values = 127.5
 
 
 def export_tflite_file():

@@ -42,7 +42,6 @@ tf.app.flags.DEFINE_boolean('is_ext_use_ckpt', False,
 tf.app.flags.DEFINE_boolean('quantize_train', False,
                             'Whether to quantize training')
 
-
 tf.app.flags.DEFINE_integer('num_class', 1, 'num of class')
 tf.app.flags.DEFINE_integer('input_num_channel', 3, 'num of class')
 tf.app.flags.DEFINE_integer('img_height', 512, 'image height')
@@ -77,7 +76,6 @@ tf.app.flags.DEFINE_float('select_threshold', 0.01, 'Selection threshold.')
 tf.app.flags.DEFINE_float('nms_threshold', 0.45, 'Non-Maximum Selection threshold.')
 tf.app.flags.DEFINE_float('matching_threshold', 0.5, 'Matching threshold with groundtruth objects.')
 
-
 LAYER_BOXES = [6, 6, 6, 6, 6, 6]
 BOX_RATIOS = [[1.0],
               [1.0 / 3, 2.0 / 3, 4.0 / 3],
@@ -85,7 +83,7 @@ BOX_RATIOS = [[1.0],
               [1.0 / 3, 2.0 / 3, 4.0 / 3],
               [1.0 / 3, 2.0 / 3, 4.0 / 3]]
 
-FIRST_RATIOS = [1.0, 1.0, 2.0, 3.0, 0.5, 1.0/3.0]
+FIRST_RATIOS = [1.0, 1.0, 2.0, 3.0, 0.5, 1.0 / 3.0]
 BOX_S_MIN = 0.2
 FIRST_SCALE = 0.08
 NEGPOSRATIO = 3
@@ -96,14 +94,14 @@ BOTTLENECK_WIDTH = [2, 2, 2, 2]
 OUT_SHAPES = [[32, 32], [32, 32], [16, 16], [8, 8], [4, 4]]
 ANCHOR_SIZE_BOUNDS = [0.10, 0.90]
 MEANS = [123., 117., 104.]
-SCALE = [3.0 / 64,  3.0 / 32, 3.0 / 16, 3.0 / 8, 3.0 / 4]
+SCALE = [3.0 / 64, 3.0 / 32, 3.0 / 16, 3.0 / 8, 3.0 / 4]
 NUM_CENTERS = [2, 1, 1, 1, 1]
 SCALE_RATIO = [0.02, 0.046875, 0.09375, 0.125, 0.125]
 IOU_thr = [0.5, 0.5, 0.5]
-NEG_IOU_thr = [0.26, 0.266, 0.287,  0.26, 0.25, 0.36]
+NEG_IOU_thr = [0.26, 0.266, 0.287, 0.26, 0.25, 0.36]
 Afa = [1.0, 0.7, 0.35, 0.25, 0.175, 0.175]
 POW_INDEX = [4, 3.5, 2.5, 2, 1.5, 1.5]
-#ANCHOR_NUM = 3
+# ANCHOR_NUM = 3
 RATIOS_NUM = [1, 3, 3, 3, 3]
 SCALE_NUM = 1
 WHRATIO = 1.0
